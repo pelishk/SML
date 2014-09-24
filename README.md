@@ -1,7 +1,6 @@
 ---
-title: "README"
-author: "DataJM"
-date: "Tuesday, September 23, 2014"
+Fecha: 
+"Tuesday, September 23, 2014"
 ---
 
 Este script es para poder automatizar la descarga de la Lista Nominal de la página del INE. 
