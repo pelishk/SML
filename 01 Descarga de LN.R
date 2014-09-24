@@ -1,7 +1,7 @@
 
 library(RCurl)
 
-IFE<- "/Users/HipsterMany/Desktop/dummys"
+IFE<- "C:/Users/manuel.barrera/Desktop/LN test"
 setwd(IFE)
 
 getwd()
