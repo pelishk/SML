@@ -1,5 +1,6 @@
 
 library(RCurl)
+library(reshape2)
 
 IFE<- "C:/Users/manuel.barrera/Desktop/LN test"
 setwd(IFE)
@@ -32,7 +33,7 @@ descargaLN<-function(url="http://listanominal.ife.org.mx/ubicamodulo/PHP/int_est
       )
       )
     )
-  sexodatos<-  lapply(sexo,eval)
+  sexodatos<- lapply(sexo,eval)
   sexodatos<-gsub('<br>','\n',sexodatos) 
   sexopego<-as.list(parse(text=paste(
     'write.table(sexodatos[[',1:32,']],paste("e",',1:32,',".txt",sep="")
@@ -74,15 +75,71 @@ Sys.time()
 descargaLN()
 Sys.time()
 
+# Hace una lista de los archivos en la carpeta elegida
 
 archivos<- list.files(IFE)
+
+# separa la lista entre los que inician con "e" y los que inician con "s". Crea
+# la lista de los archivos de "sexo" y "edad".
 
 subcadena<-substr(archivos, 1, 1)
 
 listado.s<-subset(archivos, subcadena=="s", names(archivos))
 listado.e<-subset(archivos, subcadena=="e", names(archivos))
 
+# Lee los arhivos y los agrega a un data frame conglomerado para "sexo" y "edad"
+
 bysexo<- do.call("rbind", lapply(listado.s, read.table, header=T, sep="|"))
 byedad<- do.call("rbind", lapply(listado.e, read.table, header=T, sep="|"))
 
+# Crea las llaves. Cada Estado tiene secciones únicas, aún así, se agrega una 
+# validación.
+
+bysexo$llave<- bysexo$edo*1000000 + bysexo$secc
+byedad$llave<- byedad$edo*1000000 + byedad$secc
+
+# Pasa a formato "wide" la base de edad.
+
+byedad <- dcast(byedad, edo + dto + mun + secc + llave ~ gpo_edad, value.var="lista")
+
+#####################################################################################
+##### Aquí tiene que haber un if para saber si todas las llaves son únicas###########
+
+duplicated(bysexo$llave)
+
+duplicated(byedad$llave)
+
+##### Sólo debemos saber si el vector contiene únicamente "FALSE"
+#####################################################################################
+
+# Hace el data frame final
+
+LN<- subset(bysexo, llave>0, c("llave","edo","dto","mun","secc", "hom_ln", "muj_ln"))
+
+LN<- merge(LN, subset(byedad, llave>0, names(byedad)[5:17]), by="llave", all=T)
+
+write.csv(LN, paste("LN_", Sys.Date(),".csv", sep=""))
+##### taller
+
+systime()
+
+paste("LN_", Sys.Date(), sep="")
+
+names(byedad)
+
+duplicated(names(tabsexo))
+
+table(bysexo$edo)
+
+names(bysexo)
+
+table(bysexo$edo)
+
+Sys.Date()
+
+basem<- bysexo
+
+head(basem[match(basem$llave, bysexo$llave),])
+
+base[,variable2]<-names(agrupame)[i](match(as.numeric(base[,variable]),agrupame[i]))
 
