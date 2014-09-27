@@ -112,34 +112,12 @@ duplicated(byedad$llave)
 ##### Sólo debemos saber si el vector contiene únicamente "FALSE"
 #####################################################################################
 
-# Hace el data frame final
+# Hace el data frame final y exporta el .csv
 
 LN<- subset(bysexo, llave>0, c("llave","edo","dto","mun","secc", "hom_ln", "muj_ln"))
 
 LN<- merge(LN, subset(byedad, llave>0, names(byedad)[5:17]), by="llave", all=T)
 
 write.csv(LN, paste("LN_", Sys.Date(),".csv", sep=""))
+
 ##### taller
-
-systime()
-
-paste("LN_", Sys.Date(), sep="")
-
-names(byedad)
-
-duplicated(names(tabsexo))
-
-table(bysexo$edo)
-
-names(bysexo)
-
-table(bysexo$edo)
-
-Sys.Date()
-
-basem<- bysexo
-
-head(basem[match(basem$llave, bysexo$llave),])
-
-base[,variable2]<-names(agrupame)[i](match(as.numeric(base[,variable]),agrupame[i]))
-
