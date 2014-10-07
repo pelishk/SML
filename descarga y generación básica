@@ -1,0 +1,214 @@
+
+
+#######################################################################################################
+############   parámetros   ###########################################################################
+#######################################################################################################
+
+
+url<-"http://listanominal.ife.org.mx/ubicamodulo/PHP/int_est_sal_txt.php"
+ws<-''
+
+
+
+
+#######################################################################################################
+###########   proceso de descarga   ###################################################################
+#######################################################################################################
+
+
+
+require(RCurl)
+  
+  
+  
+# defino el espacio de trabajo
+  
+  
+if(ws=='') {
+  ws<-getwd()
+}else {
+  ws<-ws
+}
+  
+
+# creo el directorio de trabajo dentro de dicho ws
+  
+dir.create(file.path(ws,'LN'))
+setwd(file.path(ws, 'LN'))
+cat(paste('\nel espacio de trabajo es',getwd())) 
+  
+
+
+
+#verifico que la URL exista
+  
+if(!url.exists(url)){
+  stop('\n LA URL es equivocada, corrígela')
+} else {
+  
+  cat('\nla dirección URL es válida')
+}
+  
+  
+# descarga de las bases por sexo
+
+
+sexodatos<-list()
+sexodatos[[33]]<-1
+sexodatos[[33]]<-NULL
+nulos<-NULL
+
+for(i in 1:32){
+  nulos[i]<-is.null(sexodatos[[i]])
+}
+vector<-which(nulos)
+
+while(length(vector)!=0){
+  for(i in vector){
+    cat(paste('\ndescargando lista por sexo del estado',i))
+    tryCatch({
+      sexodatos[[i]]<-eval(parse(text=paste(
+        'postForm("http://listanominal.ife.org.mx/ubicamodulo/PHP/int_est_sal_txt.php",
+        .params=list(edo = paste(',i,'), tipo = "sx"),
+        .encoding = "UTF-8",binary = NA,style = "POST", .checkParams = TRUE)',
+        sep='')))
+    },error=function(e){})
+  }
+  nulos<-NULL
+  for(i in 1:32){
+    nulos[i]<-is.null(sexodatos[[i]])
+  }
+  vector<-which(nulos)
+}
+
+
+# guardo las bases por sexo
+
+
+sexodatos<-gsub('<br>','\n',sexodatos) 
+
+j<-1
+while(j<32){
+  for(i in j:32){
+    cat(paste('\nguardando base de sexo',i))
+    eval(parse(text=paste(
+      'write.table(sexodatos[[',i,']],paste("s",',i,',".txt",sep="")
+        ,sep="|",append = FALSE, quote = F,
+        na = " ", dec = ".", row.names = F,
+        col.names = F, qmethod="double",
+        fileEncoding = "UTF-8")'
+    )))
+    
+  }
+  j<-i
+  
+}
+
+# descargo las bases por edad
+
+edaddatos<-list()
+edaddatos[[33]]<-1
+edaddatos[[33]]<-NULL
+nulos<-NULL
+
+for(i in 1:32){
+  nulos[i]<-is.null(edaddatos[[i]])
+}
+vector<-which(nulos)
+
+while(length(vector)!=0){
+  for(i in vector){
+    cat(paste('\ndescargando lista por edad del estado',i))
+    tryCatch({
+      edaddatos[[i]]<-eval(parse(text=paste(
+        'postForm("http://listanominal.ife.org.mx/ubicamodulo/PHP/int_est_sal_txt.php",
+        .params=list(edo = paste(',i,'), tipo = "ge"),
+        .encoding = "UTF-8",binary = NA,style = "POST", .checkParams = TRUE)',
+        sep='')))
+    },error=function(e){})
+  }
+  nulos<-NULL
+  for(i in 1:32){
+    nulos[i]<-is.null(edaddatos[[i]])
+  }
+  vector<-which(nulos)
+}
+
+  
+#formateando y guardando las bases por edad
+
+
+edaddatos<-gsub('<br>','\n',edaddatos)
+edaddatos<-gsub('&oacute;','o',edaddatos)
+
+  for(i in 1:32){
+    cat(paste('\nguardando base de edad',i))
+    eval(parse(text=paste(
+      'write.table(edaddatos[[',i,']],paste("e",',i,',".txt",sep="")
+      ,sep="|",append = FALSE, quote = F,
+      na = " ", dec = ".", row.names = F,
+      col.names = F, qmethod="double",
+      fileEncoding = "UTF-8")'
+    )))
+    
+  }
+   
+ 
+# quitamos la basura
+
+remove(i,j,faltantes,nulos,vector,edaddatos,sexodatos)
+
+
+
+  
+  require(reshape2)
+  
+  
+  # Hace una lista de los archivos en la carpeta elegida
+  
+  archivos<- list.files()
+  
+  # separa la lista entre los que inician con "e" y los que inician con "s". Crea
+  # la lista de los archivos de "sexo" y "edad".
+  
+  subcadena<-substr(archivos, 1, 1)
+  
+  listado.s<-subset(archivos, subcadena=="s", names(archivos))
+  listado.e<-subset(archivos, subcadena=="e", names(archivos))
+  
+  # Lee los arhivos y los agrega a un data frame conglomerado para "sexo" y "edad"
+  
+  bysexo<- do.call("rbind", lapply(listado.s, read.table, header=T, sep="|"))
+  byedad<- do.call("rbind", lapply(listado.e, read.table, header=T, sep="|"))
+  
+  # Crea las llaves. Cada Estado tiene secciones únicas, aún así, se agrega una 
+  # validación.
+  
+  bysexo$llave<- bysexo$edo*1000000 + bysexo$secc
+  byedad$llave<- byedad$edo*1000000 + byedad$secc
+  
+  # Pasa a formato "wide" la base de edad.
+  
+  byedad <- dcast(byedad, edo + dto + mun + secc + llave ~ gpo_edad, value.var="lista")
+  
+  #####################################################################################
+  ##### Aquí tiene que haber un if para saber si todas las llaves son únicas###########
+  
+  duplicated(bysexo$llave)
+  
+  duplicated(byedad$llave)
+  
+  ##### Sólo debemos saber si el vector contiene únicamente "FALSE"
+  #####################################################################################
+  
+  # Hace el data frame final y exporta el .csv
+  
+  LN<- subset(bysexo, llave>0, c("llave","edo","dto","mun","secc", "hom_ln", "muj_ln"))
+  
+  LN<- merge(LN, subset(byedad, llave>0, names(byedad)[5:17]), by="llave", all=T)
+  
+  write.csv(LN, paste("LN_", Sys.Date(),".csv", sep=""))
+  
+  
+  
+  
